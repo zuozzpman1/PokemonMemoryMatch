@@ -1,0 +1,208 @@
+:root {
+    --primary-color: #ffcb05;
+    /* Pokemon Yellow */
+    --secondary-color: #3b4cca;
+    /* Pokemon Blue */
+    --accent-color: #ff5050;
+    --text-color: #333;
+    --card-bg: #fff;
+    --card-back: #3b4cca;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+    /* Remove tap highlight on mobile */
+}
+
+body {
+    font-family: 'ZCOOL KuaiLe', 'Comic Sans MS', cursive, sans-serif;
+    background-color: #f0f8ff;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    /* Prevent scrolling */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.game-container {
+    width: 95vw;
+    height: 95vh;
+    /* Force height to viewport */
+    max-width: 1200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    padding: 1vh 2vw;
+    /* Reduced padding */
+    border: 5px solid var(--primary-color);
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    height: 10vh;
+    /* Fixed header height */
+    margin-bottom: 1vh;
+    padding: 0 1vw;
+}
+
+h1 {
+    color: var(--secondary-color);
+    font-size: 5vh;
+    /* Scale with height */
+    text-shadow: 2px 2px 0 var(--primary-color);
+}
+
+.stats-bar {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+#score {
+    font-size: 4vh;
+    color: var(--text-color);
+    font-weight: bold;
+}
+
+#restart-btn {
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 1vh 2vw;
+    font-size: 3vh;
+    border-radius: 50px;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 4px 0 #cc0000;
+    transition: transform 0.1s;
+}
+
+#restart-btn:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 #cc0000;
+}
+
+/* Game Board - Grid Layout */
+.game-board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    /* Explicit 4 rows */
+    gap: 1.5vh;
+    /* Scale gap with height */
+    width: 100%;
+    height: 82vh;
+    /* Use remaining height (95vh container - 10vh header - padding) */
+    padding: 0.5vh;
+}
+
+/* For larger tablets/screens, we might want 4x4 if we have 16 cards, 
+   but 4x3 is good for 12 cards (6 pairs). Let's stick to 4x3 or 4x4 based on difficulty. 
+   Gemini suggested 12-16 cards. Let's do 4x4 (16 cards = 8 pairs) for the Pad 12.5" size.
+*/
+.game-board.mode-4x4 {
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+}
+
+.card {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+    border-radius: 15px;
+}
+
+.card.flipped {
+    transform: rotateY(180deg);
+}
+
+.card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    border: 3px solid #eee;
+    background: white;
+}
+
+.card-front {
+    background-color: var(--card-bg);
+    transform: rotateY(180deg);
+}
+
+.card-back {
+    background-color: var(--card-back);
+    background-image:
+        radial-gradient(#fff 20%, transparent 20%),
+        radial-gradient(#fff 20%, transparent 20%);
+    background-size: 20px 20px;
+    background-position: 0 0, 10px 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.card-back::after {
+    content: '';
+    width: 40%;
+    height: 40%;
+    background-color: var(--primary-color);
+    border-radius: 50%;
+    border: 4px solid #222;
+    box-shadow: inset 0 0 0 3px white;
+}
+
+.card-content {
+    width: 80%;
+    height: 80%;
+    object-fit: contain;
+}
+
+/* Mewtwo Overlay */
+#mewtwo-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(75, 0, 130, 0.9);
+    /* Darker background for visibility */
+    z-index: 9999;
+    /* Ensure on top */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    font-size: 8vmin;
+    font-weight: bold;
+    text-align: center;
+    opacity: 1;
+    transition: opacity 0.5s;
+    pointer-events: none;
+    text-shadow: 0 0 20px #ff00ff;
+}
+
+#mewtwo-overlay.hidden {
+    opacity: 0;
+}

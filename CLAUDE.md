@@ -17,21 +17,36 @@ python -m http.server 8000
 
 There is no build step, no test suite, and no linter configured.
 
+## Project Structure
+
+```
+PokemonMemoryMatch/
+├── index.html              # Main HTML entry point
+├── css/
+│   └── style.css          # All styles (1328 lines)
+├── js/
+│   └── script.js          # All game logic (1655 lines)
+├── assets/
+│   ├── audio/             # Music and sound effects
+│   │   ├── battle-music.mp3      # Pokemon battle theme (2.7MB)
+│   │   ├── victory-music.mp3     # Victory theme (1.0MB)
+│   │   └── Good Job Damian.mp3   # Personalized message (62KB)
+│   └── docs/              # Archived planning docs
+├── CLAUDE.md              # This file
+└── README.md              # User-facing documentation
+```
+
 ## Architecture
 
-The entire app is three files:
-
-- **`index.html`** — Markup for header (score, restart button), game board container, victory modal, and confetti canvas. Loads Google Font "ZCOOL KuaiLe" and links to `style.css` + `script.js`.
-- **`script.js`** — All game logic in a single file:
-  - **Pokemon data**: 8 Pokemon with PokeAPI IDs, names, and brand colors. Sprites loaded from PokeAPI CDN.
-  - **Game state**: Global variables (`flippedCards`, `matchedPairs`, `isLocked`, `score`) — no state management library.
-  - **Core functions**: `initGame()`, `createCard()`, `flipCard()`, `checkForMatch()`, `disableCards()`, `unflipCards()`.
-  - **Audio**: Web Audio API synthesized tones (flip, match, victory fanfare) — no audio library.
-  - **Confetti**: Canvas-based particle system (150 particles with gravity simulation) using `requestAnimationFrame`.
-  - **Victory**: Shows modal, plays personalized "Good Job Damian.mp3", triggers confetti.
-- **`style.css`** — CSS variables for Pokémon theming (`--primary-color: #ffcb05`, `--secondary-color: #3b4cca`, `--accent-color: #ff5050`). CSS Grid for 4x4 board. 3D card flip via `transform-style: preserve-3d` and `rotateY(180deg)`. Touch-optimized (no tap highlight, no user-select, large targets). Viewport units (vh/vw) for responsive sizing.
-
-One audio asset: `Good Job Damian.mp3` (personalized victory message).
+- **`index.html`** — Markup for all game screens (mode selector, Memory Match, HP Battle, Collection). Loads Google Font "ZCOOL KuaiLe".
+- **`js/script.js`** — All game logic in a single file (~1655 lines):
+  - **Pokemon data**: 23 Pokemon for Memory Match, 16 for HP Battle. Sprites from PokeAPI CDN.
+  - **Game modes**: Memory Match (card flip), HP Battle (auto-battle system), Collection (stickers/unlocks)
+  - **Online mode**: PeerJS WebRTC for 2-player battles (host-authoritative)
+  - **Audio**: Web Audio API synthesized SFX + HTML5 Audio for music (Pokemon Red/Blue OST)
+  - **Progression**: localStorage for unlocks, stickers, win streaks
+  - **Battle system**: Type effectiveness (fire/water/grass), auto-battle AI, team picker
+- **`css/style.css`** — CSS variables for Pokémon theming. CSS Grid layouts. 3D card flips via `transform-style: preserve-3d`. Touch-optimized (60px+ tap targets).
 
 ## Key Design Constraints
 

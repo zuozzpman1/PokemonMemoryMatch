@@ -44,37 +44,60 @@ const BATTLE_POKEMON = [
     { id: 1, name: 'Bulbasaur', type: 'grass', hp: 22, attackName: 'Vine Whip', baseDamage: 6 },
     { id: 3, name: 'Venusaur', type: 'grass', hp: 26, attackName: 'Solar Beam', baseDamage: 6 },
     { id: 470, name: 'Leafeon', type: 'grass', hp: 25, attackName: 'Leaf Blade', baseDamage: 6 },
-    // Normal (5) — fan favorites
-    { id: 25, name: 'Pikachu', type: 'normal', hp: 20, attackName: 'Thunder', baseDamage: 6 },
-    { id: 149, name: 'Dragonite', type: 'normal', hp: 35, attackName: 'Dragon Claw', baseDamage: 10 },
-    { id: 150, name: 'Mewtwo', type: 'normal', hp: 32, attackName: 'Psychic', baseDamage: 11 },
-    { id: 94, name: 'Gengar', type: 'normal', hp: 18, attackName: 'Shadow Ball', baseDamage: 7 },
+    // Electric (1)
+    { id: 25, name: 'Pikachu', type: 'electric', hp: 20, attackName: 'Thunderbolt', baseDamage: 6 },
+    // Psychic (1) - LEGENDARY
+    { id: 150, name: 'Mewtwo', type: 'psychic', hp: 40, attackName: 'Psychic', baseDamage: 13 },
+    // Dragon (1)
+    { id: 149, name: 'Dragonite', type: 'dragon', hp: 35, attackName: 'Dragon Claw', baseDamage: 10 },
+    // Ghost (1)
+    { id: 94, name: 'Gengar', type: 'ghost', hp: 18, attackName: 'Shadow Ball', baseDamage: 7 },
+    // Normal (1)
     { id: 143, name: 'Snorlax', type: 'normal', hp: 30, attackName: 'Body Slam', baseDamage: 5 },
 ];
 
 // All 16 unlocked from the start
 const UNLOCK_ORDER = BATTLE_POKEMON.map(p => p.id);
 
-// Type system constants
+// Type system constants (Authentic Pokemon Gen 1)
 const TYPE_BONUS = 25;
 const TYPE_CHART = {
-    fire: { beats: 'grass', losesTo: 'water' },
-    water: { beats: 'fire', losesTo: 'grass' },
-    grass: { beats: 'water', losesTo: 'fire' },
-    normal: { beats: null, losesTo: null },
+    fire: { beats: ['grass'], losesTo: ['water', 'dragon'], resists: ['fire', 'grass'] },
+    water: { beats: ['fire'], losesTo: ['grass', 'electric'], resists: ['fire', 'water'] },
+    grass: { beats: ['water'], losesTo: ['fire'], resists: ['grass', 'water', 'electric'] },
+    electric: { beats: ['water'], losesTo: [], resists: ['electric'] },
+    psychic: { beats: ['ghost'], losesTo: ['ghost'], resists: ['psychic', 'fire', 'water', 'grass', 'electric'] },
+    dragon: { beats: ['dragon'], losesTo: ['dragon'], resists: ['fire', 'water', 'grass', 'electric'] },
+    ghost: { beats: ['psychic', 'ghost'], losesTo: ['ghost'], resists: [] },
+    normal: { beats: [], losesTo: [], resists: [] },
 };
 const TYPE_COLORS = {
     fire: '#f08030',
     water: '#6890f0',
     grass: '#78c850',
+    electric: '#f8d030',
+    psychic: '#f85888',
+    dragon: '#7038f8',
+    ghost: '#705898',
     normal: '#a8a878',
 };
 
 function getTypeMultiplier(attackerType, defenderType) {
-    const chart = TYPE_CHART[attackerType];
-    if (!chart) return 1;
-    if (chart.beats === defenderType) return 2;
-    if (chart.losesTo === defenderType) return 0.5;
+    const attackerChart = TYPE_CHART[attackerType];
+    const defenderChart = TYPE_CHART[defenderType];
+
+    if (!attackerChart || !defenderChart) return 1;
+
+    // Check if attacker is super effective against defender
+    if (attackerChart.beats && attackerChart.beats.includes(defenderType)) {
+        return 2;
+    }
+
+    // Check if defender resists the attacker's type
+    if (defenderChart.resists && defenderChart.resists.includes(attackerType)) {
+        return 0.5;
+    }
+
     return 1;
 }
 
@@ -149,52 +172,226 @@ function playTieSting() {
     vibrate([30, 50, 30]);
 }
 
-// HP Battle Sounds
-function playAttackSound(type) {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    switch (type) {
-        case 'fire':
-            playTone(200, 'sawtooth', 0.15);
-            setTimeout(() => playTone(400, 'sawtooth', 0.2), 80);
-            setTimeout(() => playTone(600, 'sawtooth', 0.1), 160);
-            break;
-        case 'water':
-            playTone(300, 'sine', 0.2);
-            setTimeout(() => playTone(500, 'sine', 0.15), 100);
-            setTimeout(() => playTone(250, 'sine', 0.2), 200);
-            break;
-        case 'grass':
-            playTone(350, 'triangle', 0.1);
-            setTimeout(() => playTone(450, 'triangle', 0.1), 60);
-            setTimeout(() => playTone(550, 'triangle', 0.15), 120);
-            break;
-        default:
-            playTone(250, 'square', 0.15);
-            setTimeout(() => playTone(350, 'square', 0.15), 100);
-            break;
+// ===========================
+// BATTLE BACKGROUND MUSIC
+// ===========================
+
+let battleMusicAudio = null;
+let battleMusicPlaying = false;
+
+function startBattleMusic() {
+    if (battleMusicPlaying) return;
+    battleMusicPlaying = true;
+
+    // Load and loop the Pokemon battle music
+    battleMusicAudio = new Audio('assets/audio/battle-music.mp3');
+    battleMusicAudio.loop = true;
+    battleMusicAudio.volume = 0.3; // Lower volume so it doesn't overpower SFX
+
+    battleMusicAudio.play().catch(e => {
+        console.log('Battle music play failed:', e);
+        battleMusicPlaying = false;
+    });
+}
+
+function stopBattleMusic() {
+    battleMusicPlaying = false;
+    if (battleMusicAudio) {
+        battleMusicAudio.pause();
+        battleMusicAudio.currentTime = 0;
+        battleMusicAudio = null;
     }
+}
+
+function playVictoryMusic() {
+    const victoryAudio = new Audio('assets/audio/victory-music.mp3');
+    victoryAudio.volume = 0.4;
+    victoryAudio.play().catch(e => console.log('Victory music play failed:', e));
+}
+
+// ===========================
+// SOUND EFFECTS SYSTEM (Authentic Pokemon SFX)
+// ===========================
+
+// Preload authentic Pokemon sound effects (if available)
+const pokemonSFX = {
+    attackHit: null,
+    attackFire: null,
+    attackWater: null,
+    attackGrass: null,
+    superEffective: null,
+    notEffective: null,
+    faint: null,
+    menuSelect: null,
+    hpLow: null,
+    levelUp: null
+};
+
+// Try to load authentic SFX, fall back to synthesized if not found
+function initPokemonSFX() {
+    const sfxFiles = {
+        attackHit: 'assets/audio/sfx/attack-hit.mp3',
+        attackFire: 'assets/audio/sfx/attack-fire.mp3',
+        attackWater: 'assets/audio/sfx/attack-water.mp3',
+        attackGrass: 'assets/audio/sfx/attack-grass.mp3',
+        superEffective: 'assets/audio/sfx/super-effective.mp3',
+        notEffective: 'assets/audio/sfx/not-effective.mp3',
+        faint: 'assets/audio/sfx/pokemon-faint.mp3',
+        menuSelect: 'assets/audio/sfx/menu-select.mp3',
+        hpLow: 'assets/audio/sfx/hp-low.mp3',
+        levelUp: 'assets/audio/sfx/levelup.mp3'
+    };
+
+    Object.keys(sfxFiles).forEach(key => {
+        const audio = new Audio();
+        audio.preload = 'auto';
+        audio.volume = 0.6;
+        audio.src = sfxFiles[key];
+
+        // Test if file exists
+        audio.addEventListener('canplaythrough', () => {
+            pokemonSFX[key] = audio;
+        }, { once: true });
+
+        audio.addEventListener('error', () => {
+            // File not found, will use synthesized fallback
+            pokemonSFX[key] = null;
+        }, { once: true });
+    });
+}
+
+// Initialize SFX on page load
+initPokemonSFX();
+
+// Play SFX with fallback to synthesized sound
+function playSFX(sfxKey, fallbackFn) {
+    if (pokemonSFX[sfxKey]) {
+        pokemonSFX[sfxKey].currentTime = 0;
+        pokemonSFX[sfxKey].play().catch(() => {
+            if (fallbackFn) fallbackFn();
+        });
+    } else if (fallbackFn) {
+        fallbackFn();
+    }
+}
+
+// HP Battle Sounds (with authentic SFX support)
+function playAttackSound(type) {
+    const fallback = () => {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        switch (type) {
+            case 'fire':
+                playTone(200, 'sawtooth', 0.15);
+                setTimeout(() => playTone(400, 'sawtooth', 0.2), 80);
+                setTimeout(() => playTone(600, 'sawtooth', 0.1), 160);
+                break;
+            case 'water':
+                playTone(300, 'sine', 0.2);
+                setTimeout(() => playTone(500, 'sine', 0.15), 100);
+                setTimeout(() => playTone(250, 'sine', 0.2), 200);
+                break;
+            case 'grass':
+                playTone(350, 'triangle', 0.1);
+                setTimeout(() => playTone(450, 'triangle', 0.1), 60);
+                setTimeout(() => playTone(550, 'triangle', 0.15), 120);
+                break;
+            case 'electric':
+                playTone(800, 'square', 0.05);
+                setTimeout(() => playTone(900, 'square', 0.05), 40);
+                setTimeout(() => playTone(1000, 'square', 0.05), 80);
+                setTimeout(() => playTone(1100, 'square', 0.1), 120);
+                break;
+            case 'psychic':
+                playTone(600, 'sine', 0.15);
+                setTimeout(() => playTone(700, 'sine', 0.15), 100);
+                setTimeout(() => playTone(800, 'sine', 0.2), 200);
+                break;
+            case 'dragon':
+                playTone(150, 'sawtooth', 0.2);
+                setTimeout(() => playTone(300, 'sawtooth', 0.2), 100);
+                setTimeout(() => playTone(450, 'sawtooth', 0.2), 200);
+                break;
+            case 'ghost':
+                playTone(400, 'triangle', 0.1);
+                setTimeout(() => playTone(300, 'triangle', 0.1), 80);
+                setTimeout(() => playTone(500, 'triangle', 0.15), 160);
+                break;
+            default:
+                playTone(250, 'square', 0.15);
+                setTimeout(() => playTone(350, 'square', 0.15), 100);
+                break;
+        }
+    };
+
+    // Try type-specific SFX first, fall back to generic attack hit
+    const sfxKey = `attack${type.charAt(0).toUpperCase() + type.slice(1)}`;
+    if (pokemonSFX[sfxKey]) {
+        playSFX(sfxKey, fallback);
+    } else {
+        playSFX('attackHit', fallback);
+    }
+
     vibrate([30, 20, 40]);
 }
 
 function playSuperEffectiveSound() {
-    playTone(400, 'square', 0.1);
-    setTimeout(() => playTone(600, 'square', 0.1), 80);
-    setTimeout(() => playTone(800, 'square', 0.2), 160);
-    setTimeout(() => playTone(1000, 'square', 0.3), 250);
+    const fallback = () => {
+        playTone(400, 'square', 0.1);
+        setTimeout(() => playTone(600, 'square', 0.1), 80);
+        setTimeout(() => playTone(800, 'square', 0.2), 160);
+        setTimeout(() => playTone(1000, 'square', 0.3), 250);
+    };
+
+    playSFX('superEffective', fallback);
     vibrate([40, 20, 40, 20, 80]);
 }
 
+function playNotEffectiveSound() {
+    const fallback = () => {
+        playTone(200, 'triangle', 0.15);
+        setTimeout(() => playTone(150, 'triangle', 0.2), 100);
+    };
+
+    playSFX('notEffective', fallback);
+    vibrate([20, 15, 20]);
+}
+
 function playFaintSound() {
-    playTone(400, 'triangle', 0.2);
-    setTimeout(() => playTone(300, 'triangle', 0.2), 150);
-    setTimeout(() => playTone(200, 'triangle', 0.3), 300);
-    setTimeout(() => playTone(100, 'triangle', 0.4), 450);
+    const fallback = () => {
+        playTone(400, 'triangle', 0.2);
+        setTimeout(() => playTone(300, 'triangle', 0.2), 150);
+        setTimeout(() => playTone(200, 'triangle', 0.3), 300);
+        setTimeout(() => playTone(100, 'triangle', 0.4), 450);
+    };
+
+    playSFX('faint', fallback);
     vibrate([60, 40, 80]);
+}
+
+function playMenuSelectSound() {
+    const fallback = () => {
+        playTone(600, 'square', 0.05);
+    };
+
+    playSFX('menuSelect', fallback);
+    vibrate([10]);
+}
+
+function playLevelUpSound() {
+    const fallback = () => {
+        playTone(523.25, 'square', 0.1);
+        setTimeout(() => playTone(659.25, 'square', 0.1), 100);
+        setTimeout(() => playTone(783.99, 'square', 0.15), 200);
+        setTimeout(() => playTone(1046.50, 'square', 0.3), 300);
+    };
+
+    playSFX('levelUp', fallback);
+    vibrate([30, 20, 30, 20, 50]);
 }
 
 // Custom Audio for Damian
 function speakVictoryMessage() {
-    const audio = new Audio('Good Job Damian.mp3');
+    const audio = new Audio('assets/audio/Good Job Damian.mp3');
     audio.play().catch(e => console.log('Audio play failed:', e));
 }
 
@@ -519,6 +716,7 @@ function showVictory() {
 
 function showUnlockNotification(pokemon) {
     // Brief notification that a new Pokemon was unlocked
+    playLevelUpSound(); // Authentic Pokemon level-up/unlock sound
     const notif = document.createElement('div');
     notif.className = 'unlock-notification';
     notif.innerHTML = `
@@ -691,6 +889,7 @@ function onDataReceived(data) {
 
 function handleDisconnect() {
     if (isOnline) {
+        stopBattleMusic();
         isOnline = false;
         hpBattleState.isOnline = false;
         cleanupPeer();
@@ -971,9 +1170,10 @@ function togglePokemonSelection(pokemon) {
     const idx = selectedTeam.findIndex(p => p.id === pokemon.id);
     if (idx >= 0) {
         selectedTeam.splice(idx, 1);
+        playMenuSelectSound(); // Deselect sound
     } else if (selectedTeam.length < 3) {
         selectedTeam.push(pokemon);
-        playFlipSound();
+        playMenuSelectSound(); // Select sound
     } else {
         return; // Already 3 selected
     }
@@ -1055,6 +1255,7 @@ function initHpBattle(playerTeam, cpuTeam) {
     document.getElementById('switch-overlay').classList.add('hidden');
 
     renderBattleScene();
+    startBattleMusic();
 
     // Start auto-battle after a brief delay so player can see both teams
     if (!hpBattleState.isOnline || hpBattleState.isHost) {
@@ -1386,6 +1587,7 @@ function animateSwitchIn(slot, callback) {
 }
 
 function showHpBattleVictory() {
+    stopBattleMusic();
     const streak = incrementWinStreak();
     const cpuDefeated = hpBattleState.cpuTeam[hpBattleState.cpuActive];
     addSticker(cpuDefeated.id);
@@ -1415,13 +1617,13 @@ function showHpBattleVictory() {
     }
 
     modal.classList.remove('hidden');
-    playVictoryFanfare();
-    speakVictoryMessage();
+    playVictoryMusic();
     createConfetti();
     vibrate([50, 30, 50, 30, 50, 30, 100]);
 }
 
 function showHpBattleLoss() {
+    stopBattleMusic();
     if (!hpBattleState.isOnline) {
         resetWinStreak();
     }
@@ -1463,6 +1665,7 @@ document.getElementById('hp-battle-menu-btn-modal').addEventListener('click', ()
 });
 
 document.getElementById('hp-battle-menu-btn').addEventListener('click', () => {
+    stopBattleMusic();
     if (hpBattleState.isOnline) {
         cleanupPeer();
         hpBattleState.isOnline = false;

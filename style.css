@@ -1,13 +1,10 @@
 :root {
     --primary-color: #ffcb05;
-    /* Pokemon Yellow */
     --secondary-color: #3b4cca;
-    /* Pokemon Blue */
     --accent-color: #ff5050;
     --text-color: #333;
     --card-bg: #fff;
     --card-back: #3b4cca;
-    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 * {
@@ -15,7 +12,6 @@
     margin: 0;
     padding: 0;
     -webkit-tap-highlight-color: transparent;
-    /* Remove tap highlight on mobile */
 }
 
 body {
@@ -24,7 +20,6 @@ body {
     height: 100vh;
     width: 100vw;
     overflow: hidden;
-    /* Prevent scrolling */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -33,7 +28,6 @@ body {
 .game-container {
     width: 95vw;
     height: 95vh;
-    /* Force height to viewport */
     max-width: 1200px;
     display: flex;
     flex-direction: column;
@@ -42,7 +36,6 @@ body {
     border-radius: 20px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
     padding: 1vh 2vw;
-    /* Reduced padding */
     border: 5px solid var(--primary-color);
 }
 
@@ -52,7 +45,6 @@ header {
     align-items: center;
     width: 100%;
     height: 10vh;
-    /* Fixed header height */
     margin-bottom: 1vh;
     padding: 0 1vw;
 }
@@ -60,7 +52,6 @@ header {
 h1 {
     color: var(--secondary-color);
     font-size: 5vh;
-    /* Scale with height */
     text-shadow: 2px 2px 0 var(--primary-color);
 }
 
@@ -99,22 +90,10 @@ h1 {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(4, 1fr);
-    /* Explicit 4 rows */
     gap: 1.5vh;
-    /* Scale gap with height */
     width: 100%;
     height: 82vh;
-    /* Use remaining height (95vh container - 10vh header - padding) */
     padding: 0.5vh;
-}
-
-/* For larger tablets/screens, we might want 4x4 if we have 16 cards, 
-   but 4x3 is good for 12 cards (6 pairs). Let's stick to 4x3 or 4x4 based on difficulty. 
-   Gemini suggested 12-16 cards. Let's do 4x4 (16 cards = 8 pairs) for the Pad 12.5" size.
-*/
-.game-board.mode-4x4 {
-    grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(4, 1fr);
 }
 
 .card {
@@ -178,28 +157,65 @@ h1 {
     object-fit: contain;
 }
 
-/* Mewtwo Overlay */
-#mewtwo-overlay {
+/* Victory Modal */
+#victory-modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(75, 0, 130, 0.9);
-    /* Darker background for visibility */
-    z-index: 9999;
-    /* Ensure on top */
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 10000;
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
-    color: #fff;
-    font-size: 8vmin;
-    font-weight: bold;
-    text-align: center;
     opacity: 1;
-    transition: opacity 0.5s;
+    transition: opacity 0.3s;
+}
+
+#victory-modal.hidden {
+    opacity: 0;
     pointer-events: none;
+}
+
+.modal-content {
+    background: white;
+    padding: 5vh 5vw;
+    border-radius: 20px;
+    text-align: center;
+    border: 5px solid var(--primary-color);
+    box-shadow: 0 0 50px var(--primary-color);
+    animation: bounceIn 0.5s;
+    max-width: 80vw;
+}
+
+.modal-content h2 {
+    font-size: 6vh;
+    color: var(--secondary-color);
+    margin-bottom: 2vh;
+}
+
+.stars {
+    font-size: 8vh;
+    color: var(--primary-color);
+    margin-bottom: 3vh;
+    letter-spacing: 2vw;
+}
+
+#play-again-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 2vh 5vw;
+    font-size: 4vh;
+    border-radius: 50px;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 6px 0 #2E7D32;
+}
+
+#play-again-btn:active {
+    transform: translateY(4px);
     box-shadow: 0 0 0 #2E7D32;
 }
 
@@ -212,7 +228,6 @@ h1 {
     height: 100%;
     pointer-events: none;
     z-index: 9998;
-    /* Behind modal, in front of game */
 }
 
 @keyframes bounceIn {

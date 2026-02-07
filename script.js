@@ -27,10 +27,16 @@ function playTone(freq, type, duration) {
     osc.stop(audioCtx.currentTime + duration);
 }
 
-function playFlipSound() { playTone(300, 'sine', 0.1); }
+// Haptic Feedback
+function vibrate(pattern) {
+    if (navigator.vibrate) navigator.vibrate(pattern);
+}
+
+function playFlipSound() { playTone(300, 'sine', 0.1); vibrate(15); }
 function playMatchSound() {
     playTone(600, 'triangle', 0.1);
     setTimeout(() => playTone(800, 'triangle', 0.2), 100);
+    vibrate([30, 50, 30]);
 }
 
 function playVictoryFanfare() {
@@ -124,7 +130,7 @@ function initGame() {
     matchedPairs = 0;
     score = 0;
     scoreElement.textContent = 'Score: 0';
-    isLocked = false;
+    isLocked = true;
     gameBoard.innerHTML = '';
     victoryModal.classList.add('hidden');
     confettiParticles = [];
@@ -134,10 +140,21 @@ function initGame() {
     let deck = [...gamePokemon, ...gamePokemon];
     deck.sort(() => Math.random() - 0.5);
 
-    deck.forEach(pokemon => {
+    deck.forEach((pokemon, index) => {
         const card = createCard(pokemon);
+        card.classList.add('dealing');
+        card.style.animationDelay = `${index * 50}ms`;
         gameBoard.appendChild(card);
     });
+
+    const totalDealTime = (deck.length - 1) * 50 + 350;
+    setTimeout(() => {
+        document.querySelectorAll('.card.dealing').forEach(card => {
+            card.classList.remove('dealing');
+            card.style.animationDelay = '';
+        });
+        isLocked = false;
+    }, totalDealTime);
 }
 
 function createCard(pokemon) {
@@ -153,6 +170,10 @@ function createCard(pokemon) {
     img.alt = pokemon.name;
     img.classList.add('card-content');
     front.appendChild(img);
+    const nameLabel = document.createElement('span');
+    nameLabel.classList.add('card-name');
+    nameLabel.textContent = pokemon.name;
+    front.appendChild(nameLabel);
 
     const back = document.createElement('div');
     back.classList.add('card-face', 'card-back');
@@ -202,8 +223,10 @@ function disableCards() {
 
 function unflipCards() {
     isLocked = true;
+    flippedCards.forEach(card => card.classList.add('wrong'));
+    vibrate([50, 30, 50]);
     setTimeout(() => {
-        flippedCards.forEach(card => card.classList.remove('flipped'));
+        flippedCards.forEach(card => card.classList.remove('wrong', 'flipped'));
         flippedCards = [];
         isLocked = false;
     }, 1000);
@@ -215,6 +238,7 @@ function updateScore() {
 }
 
 function showVictory() {
+    vibrate([50, 30, 50, 30, 50, 30, 100]);
     playVictoryFanfare();
     speakVictoryMessage();
     createConfetti();
